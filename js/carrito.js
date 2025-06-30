@@ -162,18 +162,24 @@ botonContinuar.addEventListener("click", () => {
 });
 
 // ✅ Finalizar compra
+import { db } from './firebaseConfig.js';
+import { collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
 async function finalizarCompra(metodoDePagoSeleccionado) {
   const totalFinal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0) * 0.9;
 
-  generarTicketPDF(totalFinal);
+  generarTicketPDF(totalFinal); // opcional: ticket en PDF
 
   try {
+    // ✅ GUARDAR COMPRA EN FIRESTORE
     await addDoc(collection(db, "compras"), {
       productos: productosEnCarrito,
       total: totalFinal,
       fecha: Timestamp.now(),
       metodo: metodoDePagoSeleccionado
     });
+
+    console.log("✅ Compra guardada correctamente en Firebase");
 
     productosEnCarrito = [];
     localStorage.setItem("productos-en-carrito", JSON.stringify(productosEnCarrito));
@@ -184,9 +190,10 @@ async function finalizarCompra(metodoDePagoSeleccionado) {
     }, 2000);
 
   } catch (error) {
-    console.error("❌ Error al guardar la compra en Firebase:", error);
+    console.error("❌ Error al guardar la compra:", error);
   }
 }
+
 
 // ✅ Generar ticket en PDF
 async function generarTicketPDF(totalCompra) {
