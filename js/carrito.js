@@ -101,7 +101,6 @@ function actualizarTotal() {
   contenedorTotal.innerText = `S/ ${total.toFixed(2)}`;
 }
 
-// Botón Vaciar
 botonVaciar.addEventListener("click", () => {
   Swal.fire({
     title: '¿Vaciar carrito?',
@@ -118,7 +117,6 @@ botonVaciar.addEventListener("click", () => {
   });
 });
 
-// Botón Continuar
 botonContinuar.addEventListener("click", () => {
   if (productosEnCarrito.length === 0) return;
 
@@ -161,17 +159,12 @@ botonContinuar.addEventListener("click", () => {
   });
 });
 
-// ✅ Finalizar compra
-import { db } from './firebaseConfig.js';
-import { collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
-
 async function finalizarCompra(metodoDePagoSeleccionado) {
   const totalFinal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0) * 0.9;
 
-  generarTicketPDF(totalFinal); // opcional: ticket en PDF
+  generarTicketPDF(totalFinal);
 
   try {
-    // ✅ GUARDAR COMPRA EN FIRESTORE
     await addDoc(collection(db, "compras"), {
       productos: productosEnCarrito,
       total: totalFinal,
@@ -188,14 +181,11 @@ async function finalizarCompra(metodoDePagoSeleccionado) {
     setTimeout(() => {
       window.location.href = "index.html";
     }, 2000);
-
   } catch (error) {
     console.error("❌ Error al guardar la compra:", error);
   }
 }
 
-
-// ✅ Generar ticket en PDF
 async function generarTicketPDF(totalCompra) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -229,7 +219,6 @@ async function generarTicketPDF(totalCompra) {
   doc.save(`Ticket_Kiwicash_${numeroTicket}.pdf`);
 }
 
-// ✅ Aplicar cupón
 document.querySelector(".carrito-cupon button").addEventListener("click", () => {
   const codigo = document.querySelector(".carrito-cupon input").value.trim().toLowerCase();
   if (codigo === "kiwi10") {
