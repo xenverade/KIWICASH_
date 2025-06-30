@@ -3,7 +3,6 @@ import { collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasej
 
 let productosEnCarrito = JSON.parse(localStorage.getItem("productos-en-carrito")) || [];
 
-// Elementos del DOM
 const contenedorCarritoVacio = document.querySelector("#carrito-vacio");
 const contenedorCarritoProductos = document.querySelector("#carrito-productos");
 const contenedorCarritoAcciones = document.querySelector("#carrito-acciones");
@@ -64,11 +63,6 @@ function actualizarResumen() {
   document.querySelector("#subtotal").innerText = `S/ ${subtotal.toFixed(2)}`;
   document.querySelector("#descuento").innerText = `- S/ ${descuento.toFixed(2)}`;
   document.querySelector("#total-final").innerText = `S/ ${totalFinal.toFixed(2)}`;
-
-  const totalOhEl = document.querySelector("#total-oh");
-  if (totalOhEl) {
-    totalOhEl.innerText = `S/ ${totalFinal.toFixed(2)}`;
-  }
 }
 
 function actualizarBotonesCantidad() {
@@ -107,7 +101,7 @@ function actualizarTotal() {
   contenedorTotal.innerText = `S/ ${total.toFixed(2)}`;
 }
 
-// Botón Vaciar carrito
+// Botón Vaciar
 botonVaciar.addEventListener("click", () => {
   Swal.fire({
     title: '¿Vaciar carrito?',
@@ -124,7 +118,7 @@ botonVaciar.addEventListener("click", () => {
   });
 });
 
-// Botón CONTINUAR 
+// Botón Continuar
 botonContinuar.addEventListener("click", () => {
   if (productosEnCarrito.length === 0) return;
 
@@ -167,7 +161,7 @@ botonContinuar.addEventListener("click", () => {
   });
 });
 
-// ✅ FUNCIÓN FINALIZAR COMPRA MODULAR
+// ✅ Finalizar compra
 async function finalizarCompra(metodoDePagoSeleccionado) {
   const totalFinal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0) * 0.9;
 
@@ -181,8 +175,6 @@ async function finalizarCompra(metodoDePagoSeleccionado) {
       metodo: metodoDePagoSeleccionado
     });
 
-    console.log("✅ Compra guardada en Firebase");
-
     productosEnCarrito = [];
     localStorage.setItem("productos-en-carrito", JSON.stringify(productosEnCarrito));
     cargarProductosCarrito();
@@ -190,31 +182,13 @@ async function finalizarCompra(metodoDePagoSeleccionado) {
     setTimeout(() => {
       window.location.href = "index.html";
     }, 2000);
+
   } catch (error) {
     console.error("❌ Error al guardar la compra en Firebase:", error);
   }
 }
 
-// Aplicar cupón
-document.querySelector(".carrito-cupon button").addEventListener("click", () => {
-  const codigo = document.querySelector(".carrito-cupon input").value.trim().toLowerCase();
-  if (codigo === "kiwi10") {
-    Toastify({
-      text: "Cupón aplicado: -10%",
-      duration: 3000,
-      style: { background: "#0f5132" }
-    }).showToast();
-  } else {
-    Toastify({
-      text: "Cupón no válido",
-      duration: 3000,
-      style: { background: "#842029" }
-    }).showToast();
-  }
-});
-
-cargarProductosCarrito();
-
+// ✅ Generar ticket en PDF
 async function generarTicketPDF(totalCompra) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -247,3 +221,23 @@ async function generarTicketPDF(totalCompra) {
 
   doc.save(`Ticket_Kiwicash_${numeroTicket}.pdf`);
 }
+
+// ✅ Aplicar cupón
+document.querySelector(".carrito-cupon button").addEventListener("click", () => {
+  const codigo = document.querySelector(".carrito-cupon input").value.trim().toLowerCase();
+  if (codigo === "kiwi10") {
+    Toastify({
+      text: "Cupón aplicado: -10%",
+      duration: 3000,
+      style: { background: "#0f5132" }
+    }).showToast();
+  } else {
+    Toastify({
+      text: "Cupón no válido",
+      duration: 3000,
+      style: { background: "#842029" }
+    }).showToast();
+  }
+});
+
+cargarProductosCarrito();
