@@ -1,3 +1,6 @@
+import { db } from './firebaseConfig.js';
+import { collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
 let productosEnCarrito = JSON.parse(localStorage.getItem("productos-en-carrito")) || [];
 
 // Elementos del DOM
@@ -55,7 +58,7 @@ function cargarProductosCarrito() {
 
 function actualizarResumen() {
   const subtotal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
-  const descuento = subtotal * 0.1; // 10% de descuento
+  const descuento = subtotal * 0.1;
   const totalFinal = subtotal - descuento;
 
   document.querySelector("#subtotal").innerText = `S/ ${subtotal.toFixed(2)}`;
@@ -64,10 +67,9 @@ function actualizarResumen() {
 
   const totalOhEl = document.querySelector("#total-oh");
   if (totalOhEl) {
-    totalOhEl.innerText = `S/ ${totalFinal.toFixed(2)}`; // Solo si existe
+    totalOhEl.innerText = `S/ ${totalFinal.toFixed(2)}`;
   }
 }
-
 
 function actualizarBotonesCantidad() {
   document.querySelectorAll(".btn-cantidad").forEach(boton => {
@@ -125,84 +127,73 @@ botonVaciar.addEventListener("click", () => {
 // Botón CONTINUAR 
 botonContinuar.addEventListener("click", () => {
   if (productosEnCarrito.length === 0) return;
-let metodoDePagoSeleccionado = ""; // Global
 
-Swal.fire({
-  title: "Selecciona tu método de pago",
-  showCancelButton: true,
-  showDenyButton: true,
-  confirmButtonText: 'Tarjeta',
-  denyButtonText: `Yape / Plin`,
-  cancelButtonText: 'Cancelar',
-  icon: 'question'
-}).then((result) => {
-  if (result.isConfirmed) {
-    Swal.fire({
-      title: `Compra realizada con Tarjeta`,
-      text: "Gracias por tu compra",
-      icon: 'success',
-      confirmButtonText: 'Aceptar'
-    });
-    finalizarCompra("Tarjeta"); // ✅ Aquí lo pasas
-  } else if (result.isDenied) {
-    Swal.fire({
-      title: 'Escanea para pagar con Yape o Plin',
-      html: `<img src="img/yaplin.png" alt="QR de pago" style="width:200px; margin-bottom:10px;"><p>Total a pagar: <strong>${document.querySelector("#total-final").innerText}</strong></p>`,
-      confirmButtonText: 'Ya pagué',
-      showCancelButton: true,
-      cancelButtonText: 'Cancelar'
-    }).then((res) => {
-      if (res.isConfirmed) {
-        Swal.fire({
-          title: `¡Pago confirmado!`,
-          text: "Gracias por tu compra",
-          icon: 'success',
-          confirmButtonText: 'Aceptar'
-        });
-        finalizarCompra("Yape/Plin"); // ✅ También aquí
-      }
-    });
-  }
+  Swal.fire({
+    title: "Selecciona tu método de pago",
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonText: 'Tarjeta',
+    denyButtonText: `Yape / Plin`,
+    cancelButtonText: 'Cancelar',
+    icon: 'question'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: `Compra realizada con Tarjeta`,
+        text: "Gracias por tu compra",
+        icon: 'success',
+        confirmButtonText: 'Aceptar'
+      });
+      finalizarCompra("Tarjeta");
+    } else if (result.isDenied) {
+      Swal.fire({
+        title: 'Escanea para pagar con Yape o Plin',
+        html: `<img src="img/yaplin.png" alt="QR de pago" style="width:200px; margin-bottom:10px;"><p>Total a pagar: <strong>${document.querySelector("#total-final").innerText}</strong></p>`,
+        confirmButtonText: 'Ya pagué',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar'
+      }).then((res) => {
+        if (res.isConfirmed) {
+          Swal.fire({
+            title: `¡Pago confirmado!`,
+            text: "Gracias por tu compra",
+            icon: 'success',
+            confirmButtonText: 'Aceptar'
+          });
+          finalizarCompra("Yape/Plin");
+        }
+      });
+    }
+  });
 });
-});
 
-
-
-function finalizarCompra(metodoDePagoSeleccionado) {
+// ✅ FUNCIÓN FINALIZAR COMPRA MODULAR
+async function finalizarCompra(metodoDePagoSeleccionado) {
   const totalFinal = productosEnCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0) * 0.9;
 
   generarTicketPDF(totalFinal);
 
-  db.collection("compras").add({
-    productos: productosEnCarrito,
-    total: totalFinal,
-    fecha: new Date().toISOString(),
-    metodo: metodoDePagoSeleccionado
-  })
-  .then(() => {
+  try {
+    await addDoc(collection(db, "compras"), {
+      productos: productosEnCarrito,
+      total: totalFinal,
+      fecha: Timestamp.now(),
+      metodo: metodoDePagoSeleccionado
+    });
+
     console.log("✅ Compra guardada en Firebase");
 
-    // 🧹 Vaciar carrito
     productosEnCarrito = [];
     localStorage.setItem("productos-en-carrito", JSON.stringify(productosEnCarrito));
     cargarProductosCarrito();
 
-    // 🔁 Redirigir al index después de 2 segundos
     setTimeout(() => {
       window.location.href = "index.html";
     }, 2000);
-  })
-  .catch(error => {
+  } catch (error) {
     console.error("❌ Error al guardar la compra en Firebase:", error);
-  });
+  }
 }
-
-
-
-
-
-
-
 
 // Aplicar cupón
 document.querySelector(".carrito-cupon button").addEventListener("click", () => {
@@ -221,6 +212,7 @@ document.querySelector(".carrito-cupon button").addEventListener("click", () => 
     }).showToast();
   }
 });
+
 cargarProductosCarrito();
 
 async function generarTicketPDF(totalCompra) {
